@@ -2,319 +2,409 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CD Library Experience</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CD Premium Player</title>
     
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
     <style>
-        body {
-            margin: 0; padding: 0;
-            background: #111;
-            color: white;
-            font-family: 'Courier New', Courier, monospace;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
+        :root {
+            --bg-color: #0b0b0b;
+            --text-color: #ffffff;
+            --accent-color: #1db954; /* Spotify green style */
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
-        /* --- СЦЕНА 1: ПОЛКА --- */
-        #shelf-scene {
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Montserrat', sans-serif;
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Mobile fix */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- ЭКРАН 1: БИБЛИОТЕКА --- */
+        #library-view {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            z-index: 2;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 10;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .header {
+            position: absolute; top: 0; width: 100%;
+            padding: 30px; text-align: center;
+            font-weight: 800; font-size: 14px; letter-spacing: 2px;
+            color: #666; text-transform: uppercase;
         }
 
         .swiper {
             width: 100%;
-            height: 350px;
-            perspective: 1200px; /* Для 3D эффекта */
+            padding: 40px 0;
+            perspective: 1000px;
         }
 
         .swiper-slide {
-            width: 220px; height: 220px;
+            width: 260px; height: 260px;
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* 3D КОРОБКА */
-        .cd-case-3d {
-            width: 200px; height: 200px;
+        /* 3D Кейс */
+        .cd-case {
+            width: 240px; height: 240px;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.5s;
+            transition: transform 0.4s;
             cursor: pointer;
         }
 
-        /* Задняя часть коробки (где лежит диск) */
-        .back-cover {
-            position: absolute;
-            width: 100%; height: 100%;
-            background: #222;
-            border: 2px solid #444;
+        .cover-front {
+            position: absolute; inset: 0;
+            background-image: url('box.png'); /* Твоя обложка */
+            background-color: #222; background-size: cover;
+            transform-origin: left;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 2;
+            border-radius: 4px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .cover-inside {
+            position: absolute; inset: 0;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 4px;
             display: flex; align-items: center; justify-content: center;
-            transform: rotateY(0deg);
+            z-index: 1;
         }
 
         /* Диск внутри коробки */
-        .disk-in-case {
-            width: 180px; height: 180px;
+        .disk-thumb {
+            width: 220px; height: 220px;
             border-radius: 50%;
-            background-size: cover;
-            background-position: center;
+            background-size: cover; background-position: center;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
-        /* Передняя крышка (box.png) */
-        .front-cover {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-image: url('box.png'); /* ТВОЯ ТЕКСТУРА КОРОБКИ */
-            background-color: #333; /* Если картинки нет */
-            background-size: cover;
-            transform-origin: left; /* Петля слева */
-            transition: transform 0.6s ease-in-out;
-            z-index: 10;
-            backface-visibility: hidden; /* Чтобы с обратной стороны не просвечивала */
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        /* Внутренняя сторона крышки */
-        .front-cover::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #1a1a1a;
-            transform: rotateY(180deg);
-            backface-visibility: hidden;
-        }
+        .cd-case.open .cover-front { transform: rotateY(-140deg); }
+        .cd-case.open { transform: translateX(40px); }
 
-        /* Класс открытия */
-        .cd-case-3d.open .front-cover {
-            transform: rotateY(-135deg); /* Открываем крышку */
-        }
-
-        /* --- СЦЕНА 2: ПЛЕЕР --- */
-        #player-scene {
-            position: absolute;
-            top: 100%; /* Спрятан снизу */
-            left: 0; width: 100%; height: 100%;
-            background: #000;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            transition: top 0.8s ease-in-out;
-            z-index: 3;
-        }
-
-        /* Картинка плеера */
-        .player-bg {
-            width: 320px; height: 400px;
-            background-image: url('player.png'); /* ТВОЙ ФОН ПЛЕЕРА */
-            background-color: #222; 
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            position: relative;
-            display: flex; justify-content: center;
-        }
-
-        /* Диск в плеере */
-        .disk-spinning {
-            width: 240px; height: 240px;
-            border-radius: 50%;
-            background-size: cover;
-            background-position: center;
-            position: absolute;
-            top: 50px; /* ПОДГОНИ ЭТО ЧИСЛО ПОД СВОЮ КАРТИНКУ player.png */
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-
-        /* --- УПРАВЛЕНИЕ --- */
-        .ui-controls {
-            margin-top: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            width: 80%;
-        }
-
-        input[type=range] {
-            width: 100%;
+        /* Кнопка "Вставить" на полке */
+        #insert-fab {
+            position: absolute; bottom: 40px; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: white; color: black;
+            padding: 15px 30px; border-radius: 30px;
+            font-weight: 600; border: none;
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 10px 30px rgba(255,255,255,0.2);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0; pointer-events: none;
             cursor: pointer;
         }
+        #insert-fab.visible { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: all; }
 
-        button {
-            padding: 10px 30px;
-            background: white; color: black;
-            border: none; font-weight: bold;
-            cursor: pointer; text-transform: uppercase;
+        /* --- ЭКРАН 2: ПЛЕЕР --- */
+        #player-view {
+            position: absolute; inset: 0;
+            background: #000;
+            z-index: 20;
+            transform: translateY(100%);
+            transition: transform 0.6s cubic-bezier(0.7, 0, 0.3, 1);
+            display: flex; flex-direction: column;
         }
-        
-        .hidden { display: none; }
+
+        .player-background {
+            flex-grow: 1;
+            width: 100%;
+            background-image: url('player.png'); /* Твой фон плеера */
+            background-size: cover; background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+
+        /* Кнопка НАЗАД */
+        .back-btn {
+            position: absolute; top: 20px; left: 20px;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 50;
+            transition: 0.2s;
+        }
+        .back-btn:active { transform: scale(0.9); }
+
+        /* Вращающийся диск в плеере */
+        .main-disk {
+            position: absolute;
+            width: 260px; height: 260px;
+            left: 50%; top: 50%; /* Центрируем по умолчанию, настрой TOP если нужно */
+            transform: translate(-50%, -50%); /* Центрирование */
+            border-radius: 50%;
+            background-size: cover; background-position: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            /* Убери или измени это значение, чтобы подвинуть диск вверх/вниз относительно картинки плеера */
+            margin-top: -40px; 
+        }
+
+        /* Панель управления */
+        .controls-panel {
+            height: 160px;
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 20px; gap: 20px;
+        }
+
+        /* Кастомный слайдер */
+        .slider-container {
+            width: 80%; display: flex; align-items: center; gap: 15px;
+            font-size: 12px; color: #888;
+        }
+        input[type=range] {
+            flex-grow: 1; -webkit-appearance: none; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px;
+            border-radius: 50%; background: #fff; cursor: pointer;
+            margin-top: -6px; box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer;
+            background: #444; border-radius: 2px;
+        }
+
+        /* Кнопка Play */
+        .play-btn {
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            background: white; color: black;
+            border: none; font-size: 24px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+        .play-btn:active { transform: scale(0.95); }
+
     </style>
 </head>
 <body>
 
-    <div id="shelf-scene">
-        <h2 style="margin-bottom: 20px;">МОЯ КОЛЛЕКЦИЯ</h2>
-        <div class="swiper mySwiper">
-            <div class="swiper-wrapper" id="shelf-wrapper"></div>
-        </div>
-        <button id="insertBtn" class="hidden" style="margin-top: 30px;">Вставить в плеер</button>
-    </div>
-
-    <div id="player-scene">
-        <button id="backBtn" style="position: absolute; top: 20px; left: 20px;">&uarr; На полку</button>
+    <div id="library-view">
+        <div class="header">Music Collection</div>
         
-        <div class="player-bg">
-            <div id="active-disk" class="disk-spinning"></div>
+        <div class="swiper mySwiper">
+            <div class="swiper-wrapper" id="shelf">
+                </div>
         </div>
 
-        <div class="ui-controls">
-            <label>СКОРОСТЬ ВРАЩЕНИЯ</label>
-            <input type="range" id="speedControl" min="0" max="100" step="0.1" value="1">
-            <button id="togglePlay">СТАРТ / СТОП</button>
+        <button id="insert-fab" onclick="goToPlayer()">
+            <span>Слушать</span>
+            <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+
+    <div id="player-view">
+        <div class="back-btn" onclick="goToLibrary()">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+
+        <div class="player-background">
+            <div id="active-disk" class="main-disk"></div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="slider-container">
+                <i class="fa-solid fa-gauge-high"></i>
+                <input type="range" id="speed-slider" min="0" max="4" step="0.1" value="0">
+            </div>
+
+            <button class="play-btn" id="play-toggle" onclick="togglePlay()">
+                <i class="fa-solid fa-play" id="play-icon"></i>
+            </button>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <script>
         // === НАСТРОЙКИ ===
-        const user = 'cursorus';
-        const repo = 'cd';
+        const githubUser = 'cursorus';
+        const githubRepo = 'cd';
+
+        // Переменные
+        let selectedUrl = '';
+        let currentCase = null;
+        let rotationAnim = null;
+        let isSpinning = false;
         
-        // Ссылки на DOM
-        const shelfWrapper = document.getElementById('shelf-wrapper');
-        const shelfScene = document.getElementById('shelf-scene');
-        const playerScene = document.getElementById('player-scene');
-        const insertBtn = document.getElementById('insertBtn');
+        const slider = document.getElementById('speed-slider');
+        const playIcon = document.getElementById('play-icon');
         const activeDisk = document.getElementById('active-disk');
-        const speedControl = document.getElementById('speedControl');
-        
-        let currentOpenCase = null;
-        let selectedDiskUrl = '';
-        let spinTween = null;
-        let isPlaying = false;
 
-        // 1. ЗАГРУЗКА
-        async function loadLibrary() {
+        // 1. Загрузка из GitHub
+        async function init() {
             try {
-                // Если API не работает, раскомментируй строку ниже для тестов:
-                // const images = [{download_url: 'images/disk1.png'}, {download_url: 'images/disk2.png'}];
-                
-                const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`);
-                const files = await res.json();
-                const images = files.filter(f => f.name.match(/\.(png|jpg|jpeg|webp)$/i));
+                // Если тестируешь без сервера, раскомментируй заглушку:
+                // renderShelf([{download_url: 'images/disk.png'}, {download_url: 'images/oapaqksjsh.png'}]); return;
 
-                images.forEach(img => {
-                    const slide = document.createElement('div');
-                    slide.className = 'swiper-slide';
-                    slide.innerHTML = `
-                        <div class="cd-case-3d" onclick="toggleCase(this, '${img.download_url}')">
-                            <div class="back-cover">
-                                <div class="disk-in-case" style="background-image: url('${img.download_url}')"></div>
-                            </div>
-                            <div class="front-cover"></div>
-                        </div>
-                    `;
-                    shelfWrapper.appendChild(slide);
-                });
-
-                new Swiper(".mySwiper", {
-                    effect: "coverflow",
-                    centeredSlides: true,
-                    slidesPerView: "auto",
-                    coverflowEffect: { rotate: 20, stretch: 0, depth: 100, modifier: 1, slideShadows: true }
-                });
-
+                const res = await fetch(`https://api.github.com/repos/${githubUser}/${githubRepo}/contents/images`);
+                const data = await res.json();
+                const images = data.filter(f => f.name.match(/\.(png|jpg|webp)$/i));
+                renderShelf(images);
             } catch (e) {
-                console.log("Ошибка API или папки images нет");
-                shelfWrapper.innerHTML = "<p>Ошибка: проверь user/repo в коде</p>";
+                console.error("Ошибка API");
+                // Создадим тестовые, если API упал
+                renderShelf([{download_url: 'images/disk.png'}]);
             }
         }
 
-        // 2. ОТКРЫТИЕ КОРОБКИ (Эффект Turn.js на CSS)
-        window.toggleCase = function(element, url) {
-            // Закрываем предыдущую
-            if (currentOpenCase && currentOpenCase !== element) {
-                currentOpenCase.classList.remove('open');
+        function renderShelf(files) {
+            const wrapper = document.getElementById('shelf');
+            files.forEach(file => {
+                const slide = document.createElement('div');
+                slide.className = 'swiper-slide';
+                slide.innerHTML = `
+                    <div class="cd-case" onclick="onCaseClick(this, '${file.download_url}')">
+                        <div class="cover-inside">
+                            <div class="disk-thumb" style="background-image: url('${file.download_url}')"></div>
+                        </div>
+                        <div class="cover-front"></div>
+                    </div>
+                `;
+                wrapper.appendChild(slide);
+            });
+
+            new Swiper(".mySwiper", {
+                effect: "coverflow",
+                grabCursor: true,
+                centeredSlides: true,
+                slidesPerView: "auto",
+                coverflowEffect: { rotate: 30, stretch: 0, depth: 200, modifier: 1, slideShadows: false },
+            });
+        }
+
+        // 2. Логика открытия коробки
+        window.onCaseClick = function(el, url) {
+            if (currentCase && currentCase !== el) {
+                currentCase.classList.remove('open');
             }
             
-            // Тоггл текущей
-            element.classList.toggle('open');
-            currentOpenCase = element.classList.contains('open') ? element : null;
+            el.classList.toggle('open');
+            const isOpen = el.classList.contains('open');
+            currentCase = isOpen ? el : null;
+            selectedUrl = url;
 
-            if (currentOpenCase) {
-                selectedDiskUrl = url;
-                insertBtn.classList.remove('hidden');
+            const fab = document.getElementById('insert-fab');
+            isOpen ? fab.classList.add('visible') : fab.classList.remove('visible');
+        }
+
+        // 3. Переход в плеер
+        window.goToPlayer = function() {
+            if (!selectedUrl) return;
+            
+            // Ставим картинку диска
+            activeDisk.style.backgroundImage = `url('${selectedUrl}')`;
+            
+            // Анимация перехода экранов
+            document.getElementById('library-view').style.transform = "scale(0.9) translateY(-100px)";
+            document.getElementById('library-view').style.opacity = "0";
+            document.getElementById('player-view').style.transform = "translateY(0%)";
+            
+            // Сброс состояния плеера
+            slider.value = 0;
+            isSpinning = false;
+            updatePlayIcon();
+            
+            // Инициализация вращения (на паузе)
+            if (rotationAnim) rotationAnim.kill();
+            rotationAnim = gsap.to(activeDisk, {
+                rotation: 360, duration: 1, repeat: -1, ease: "none", paused: true
+            });
+        }
+
+        // 4. Возврат в библиотеку
+        window.goToLibrary = function() {
+            document.getElementById('player-view').style.transform = "translateY(100%)";
+            document.getElementById('library-view').style.transform = "scale(1) translateY(0)";
+            document.getElementById('library-view').style.opacity = "1";
+            
+            // Останавливаем диск
+            slider.value = 0;
+            if(rotationAnim) rotationAnim.pause();
+            isSpinning = false;
+            updatePlayIcon();
+        }
+
+        // 5. Управление плеером
+        window.togglePlay = function() {
+            isSpinning = !isSpinning;
+            
+            if (isSpinning) {
+                // Если включили, а скорость 0 -> ставим дефолт
+                if (parseFloat(slider.value) === 0) slider.value = 1;
+                updateRotationSpeed();
             } else {
-                insertBtn.classList.add('hidden');
+                // Если выключили -> плавная остановка
+                gsap.to(rotationAnim, { timeScale: 0, duration: 1.5, ease: "power2.out", onComplete: () => rotationAnim.pause() });
+                slider.value = 0;
             }
-        };
+            updatePlayIcon();
+        }
 
-        // 3. ПЕРЕХОД К ПЛЕЕРУ
-        insertBtn.onclick = () => {
-            // Устанавливаем картинку диска в плеер
-            activeDisk.style.backgroundImage = `url('${selectedDiskUrl}')`;
-            
-            // Анимация экранов
-            shelfScene.style.transform = "translateY(-100%)"; // Полка уезжает вверх
-            playerScene.style.top = "0%"; // Плеер выезжает снизу
-            
-            // Сброс настроек плеера
-            speedControl.value = 0;
-            updateSpeed();
-            isPlaying = true;
-        };
-
-        // 4. ВОЗВРАТ НА ПОЛКУ
-        document.getElementById('backBtn').onclick = () => {
-            shelfScene.style.transform = "translateY(0%)";
-            playerScene.style.top = "100%";
-            if(spinTween) spinTween.pause();
-            isPlaying = false;
-        };
-
-        // 5. ЛОГИКА ВРАЩЕНИЯ И СКОРОСТИ
-        // Создаем анимацию, но ставим на паузу
-        spinTween = gsap.to(activeDisk, {
-            rotation: 360,
-            duration: 1,
-            repeat: -1,
-            ease: "none",
-            paused: true
+        slider.addEventListener('input', () => {
+            const val = parseFloat(slider.value);
+            if (val > 0 && !isSpinning) {
+                isSpinning = true;
+                updatePlayIcon();
+            } else if (val === 0 && isSpinning) {
+                isSpinning = false;
+                updatePlayIcon();
+            }
+            updateRotationSpeed();
         });
 
-        document.getElementById('togglePlay').onclick = () => {
-            isPlaying = !isPlaying;
-            if(isPlaying) {
-                if(speedControl.value == 0) speedControl.value = 1; // Автостарт
-                updateSpeed();
-            } else {
-                gsap.to(spinTween, { timeScale: 0, duration: 1 }); // Плавная остановка
-            }
-        };
-
-        // Слушаем ползунок
-        speedControl.addEventListener('input', updateSpeed);
-
-        function updateSpeed() {
-            if (!isPlaying) return;
-            const val = parseFloat(speedControl.value);
-            
+        function updateRotationSpeed() {
+            const val = parseFloat(slider.value);
             if (val === 0) {
-                spinTween.pause();
+                gsap.to(rotationAnim, { timeScale: 0, duration: 0.5 });
             } else {
-                spinTween.play();
-                gsap.to(spinTween, { timeScale: val, duration: 0.2 }); // Плавное изменение скорости
+                rotationAnim.play();
+                gsap.to(rotationAnim, { timeScale: val, duration: 0.3 });
             }
         }
 
-        loadLibrary();
+        function updatePlayIcon() {
+            if (isSpinning) {
+                playIcon.className = "fa-solid fa-pause";
+            } else {
+                playIcon.className = "fa-solid fa-play";
+            }
+        }
+
+        init();
     </script>
 </body>
 </html>

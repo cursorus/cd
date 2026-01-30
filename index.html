@@ -212,7 +212,6 @@
 <body>
 
     <div id="library-view">
-        <div class="header">Music Collection</div>
         
         <div class="swiper mySwiper">
             <div class="swiper-wrapper" id="shelf">
@@ -220,7 +219,7 @@
         </div>
 
         <button id="insert-fab" onclick="goToPlayer()">
-            <span>Слушать</span>
+            <span>ВСТАВИТЬ</span>
             <i class="fa-solid fa-arrow-right"></i>
         </button>
     </div>
@@ -237,7 +236,7 @@
         <div class="controls-panel">
             <div class="slider-container">
                 <i class="fa-solid fa-gauge-high"></i>
-                <input type="range" id="speed-slider" min="0" max="4" step="0.1" value="0">
+                <input type="range" id="speed-slider" min="0" max="1000" step="0.1" value="0">
             </div>
 
             <button class="play-btn" id="play-toggle" onclick="togglePlay()">

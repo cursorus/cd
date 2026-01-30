@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>CD Shelf Pro</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <style>
+        body { background: #121212; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        
+        /* Полка */
+        .swiper { width: 100%; padding-top: 50px; padding-bottom: 50px; }
+        .swiper-slide { background-position: center; background-size: cover; width: 300px; height: 300px; perspective: 1000px; }
+
+        /* Конверт */
+        .cd-case { width: 100%; height: 100%; position: relative; cursor: pointer; }
+        .sleeve { 
+            position: absolute; width: 100%; height: 100%; 
+            background: #222; border: 1px solid #444; z-index: 2;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        /* Прозрачное окно в конверте */
+        .sleeve::after {
+            content: ''; position: absolute; width: 120px; height: 120px;
+            background: rgba(255,255,255,0.05); border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* Диск */
+        .disk { 
+            position: absolute; width: 280px; height: 280px; 
+            border-radius: 50%; top: 10px; left: 10px; z-index: 1;
+            background-size: cover; background-position: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); transform: translateY(0);
+        }
+
+        /* Кнопки */
+        .controls { margin-top: 50px; display: flex; gap: 20px; }
+        button { 
+            padding: 15px 30px; border: 1px solid #fff; background: transparent; 
+            color: white; cursor: pointer; font-weight: bold; text-transform: uppercase;
+            transition: 0.3s; opacity: 0.3; pointer-events: none;
+        }
+        button.active { opacity: 1; pointer-events: all; background: #fff; color: #000; }
+    </style>
+</head>
+<body>
+
+    <div class="swiper mySwiper">
+        <div class="swiper-wrapper" id="shelf">
+            </div>
+    </div>
+
+    <div class="controls">
+        <button id="playBtn">Вставить и запустить</button>
+        <button id="stopBtn">Остановить</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        // Имена твоих файлов в папке images/
+        const images = ['disk.png', 'oapaqksjsh.png', 'cool_music.png', 'jazz.png'];
+        const shelf = document.getElementById('shelf');
+        let selectedDisk = null;
+        let spinAnim = null;
+
+        // 1. Генерируем полку
+        images.forEach(img => {
+            const slide = document.createElement('div');
+            slide.className = 'swiper-slide';
+            slide.innerHTML = `
+                <div class="cd-case">
+                    <div class="sleeve"></div>
+                    <div class="disk" style="background-image: url('images/${img}')"></div>
+                </div>
+            `;
+            slide.onclick = () => pickDisk(slide.querySelector('.disk'));
+            shelf.appendChild(slide);
+        });
+
+        // 2. Инициализируем Swiper (эффект полки)
+        const swiper = new Swiper(".mySwiper", {
+            effect: "coverflow",
+            grabCursor: true,
+            centeredSlides: true,
+            slidesPerView: "auto",
+            coverflowEffect: { rotate: 50, stretch: 0, depth: 100, modifier: 1, slideShadows: true },
+        });
+
+        // 3. Логика выбора диска (GSAP)
+        function pickDisk(diskElement) {
+            if (selectedDisk) return;
+            selectedDisk = diskElement;
+
+            // Анимация: диск выезжает вверх
+            gsap.to(diskElement, { y: -150, zIndex: 10, duration: 0.5, ease: "back.out(1.7)" });
+            document.getElementById('playBtn').classList.add('active');
+        }
+
+        // 4. Вставить и крутить
+        document.getElementById('playBtn').onclick = function() {
+            if (!selectedDisk) return;
+            
+            this.classList.remove('active');
+            
+            // Центрируем диск "в плеер" (условно в центр экрана)
+            gsap.to(selectedDisk, { 
+                y: 200, scale: 1.2, duration: 0.8, ease: "power2.inOut",
+                onComplete: () => {
+                    // Начинаем бесконечное вращение
+                    spinAnim = gsap.to(selectedDisk, { rotation: 360, duration: 2, repeat: -1, ease: "none" });
+                    document.getElementById('stopBtn').classList.add('active');
+                }
+            });
+        };
+
+        // 5. Остановить (инерция)
+        document.getElementById('stopBtn').onclick = function() {
+            if (!spinAnim) return;
+            this.classList.remove('active');
+
+            // Плавно замедляем скорость вращения до 0 за 4 секунды
+            gsap.to(spinAnim, { 
+                timeScale: 0, 
+                duration: 4, 
+                ease: "power2.out",
+                onComplete: () => {
+                    spinAnim.pause();
+                    // Можно вернуть диск на место или оставить так
+                }
+            });
+        };
+    </script>
+</body>
+</html>

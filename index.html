@@ -2,143 +2,250 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>CD Shelf Auto-Loader</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CD Premium Player</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
-        body { background: #1a1a1b; color: #eee; font-family: 'Segoe UI', sans-serif; height: 100vh; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        :root {
+            --bg: #0f0f0f;
+            --accent: #007aff;
+        }
+
+        body {
+            background: var(--bg);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+
+        #loader { position: absolute; top: 50%; }
+
+        /* Полка под размер экрана */
+        .swiper { width: 100%; max-height: 45vh; padding: 20px 0; }
+        .swiper-slide { width: 280px; height: 280px; display: flex; justify-content: center; align-items: center; }
+
+        /* Конверт и диск */
+        .cd-case {
+            width: 250px; height: 250px;
+            position: relative;
+            background: #1a1a1a; /* Цвет конверта */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+            overflow: hidden;
+        }
+
+        .window-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            background-image: url('window.png'); /* Твоя текстура */
+            background-size: cover;
+            /* Если картинки нет, делаем дырку кодом */
+            mask-image: radial-gradient(circle 75px at center, transparent 99%, black 100%);
+            -webkit-mask-image: radial-gradient(circle 75px at center, transparent 99%, black 100%);
+            pointer-events: none;
+        }
+
+        .disk {
+            position: absolute;
+            width: 240px; height: 240px;
+            top: 5px; left: 5px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            z-index: 2;
+        }
+
+        /* Зона плеера (куда летит диск) */
+        .player-hub {
+            flex-grow: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .drop-zone {
+            width: 300px; height: 300px;
+            border: 2px dashed rgba(255,255,255,0.1);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        /* Интерфейс управления */
+        .ui-panel {
+            padding-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .main-btn {
+            padding: 15px 35px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,122,255,0.4);
+        }
+
+        .main-btn:disabled { background: #333; opacity: 0.5; cursor: not-allowed; }
         
-        /* Стили полки */
-        .swiper { width: 100%; padding: 50px 0; }
-        .swiper-slide { width: 260px; height: 260px; display: flex; align-items: center; justify-content: center; }
-
-        .cd-case { width: 240px; height: 240px; position: relative; cursor: pointer; transition: transform 0.3s; }
-        .sleeve { 
-            position: absolute; width: 100%; height: 100%; 
-            background: linear-gradient(135deg, #333, #111); 
-            z-index: 2; border-radius: 4px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            display: flex; align-items: center; justify-content: center;
+        .speed-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-family: monospace;
+            display: none; /* Скрыто по умолчанию */
         }
-        /* Дырка в конверте */
-        .sleeve::after {
-            content: ''; position: absolute; width: 100px; height: 100px;
-            background: rgba(0,0,0,0.3); border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .disk { 
-            position: absolute; width: 230px; height: 230px; 
-            border-radius: 50%; top: 5px; left: 5px; z-index: 1;
-            background-size: cover; background-position: center;
-            box-shadow: 0 0 15px rgba(0,0,0,0.6);
-        }
-
-        .controls { margin-top: 40px; display: flex; gap: 15px; }
-        button { 
-            padding: 12px 24px; border: none; background: #444; color: white; 
-            border-radius: 20px; cursor: pointer; font-weight: bold; opacity: 0.3; pointer-events: none;
-        }
-        button.active { opacity: 1; pointer-events: all; background: #007aff; }
     </style>
 </head>
 <body>
 
-    <div id="loader">Ищу диски в папке images...</div>
+    <div id="loader">Загрузка коллекции...</div>
 
     <div class="swiper mySwiper">
         <div class="swiper-wrapper" id="shelf"></div>
     </div>
 
-    <div class="controls">
-        <button id="playBtn">Запустить диск</button>
-        <button id="stopBtn">Остановить</button>
+    <div class="player-hub">
+        <div class="drop-zone" id="target"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <div class="ui-panel">
+        <button id="actionBtn" class="main-btn" disabled>
+            <span id="btnIcon">💿</span>
+            <span id="btnText">Выберите диск</span>
+        </button>
+        <div id="speedUI" class="speed-badge">RPM: <span id="rpm">0</span></div>
+    </div>
 
     <script>
-        // === НАСТРОЙКИ ГИТХАБА ===
+        // Настройки GitHub (ЗАМЕНИ НА СВОИ)
         const user = 'cursorus'; 
         const repo = 'cd';
-        const folder = 'images';
-
+        
         const shelf = document.getElementById('shelf');
+        const actionBtn = document.getElementById('actionBtn');
+        const btnText = document.getElementById('btnText');
+        const btnIcon = document.getElementById('btnIcon');
+        const speedUI = document.getElementById('speedUI');
+        const rpmText = document.getElementById('rpm');
+
         let selectedDisk = null;
         let spinAnim = null;
+        let currentState = 'SELECT'; // SELECT -> INSERT -> PLAY -> STOP
 
-        // Функция-шпион: идет в Гитхаб и спрашивает список файлов
-        async function loadImages() {
+        async function init() {
             try {
-                const response = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${folder}`);
-                const files = await response.json();
+                const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`);
+                const files = await res.json();
+                const images = files.filter(f => f.name.match(/\.(png|jpg|webp)$/i));
                 
-                // Фильтруем только картинки
-                const imageFiles = files.filter(file => 
-                    file.name.match(/\.(png|jpg|jpeg|webp)$/i)
-                );
+                images.forEach(file => {
+                    const slide = document.createElement('div');
+                    slide.className = 'swiper-slide';
+                    slide.innerHTML = `
+                        <div class="cd-case" onclick="handleSelect(this)">
+                            <div class="window-overlay"></div>
+                            <div class="disk" style="background-image: url('${file.download_url}')"></div>
+                        </div>
+                    `;
+                    shelf.appendChild(slide);
+                });
 
-                if (imageFiles.length === 0) {
-                    document.getElementById('loader').innerText = "В папке images пусто :(";
-                    return;
-                }
-
-                renderShelf(imageFiles);
+                new Swiper(".mySwiper", {
+                    effect: "coverflow",
+                    centeredSlides: true,
+                    slidesPerView: "auto",
+                    coverflowEffect: { rotate: 35, stretch: 0, depth: 160, modifier: 1, slideShadows: true }
+                });
                 document.getElementById('loader').style.display = 'none';
             } catch (e) {
-                console.error(e);
-                document.getElementById('loader').innerText = "Ошибка API. Проверь ник и название репо.";
+                document.getElementById('loader').innerText = "Ошибка загрузки. Проверь настройки API.";
             }
         }
 
-        function renderShelf(files) {
-            files.forEach(file => {
-                const slide = document.createElement('div');
-                slide.className = 'swiper-slide';
-                slide.innerHTML = `
-                    <div class="cd-case">
-                        <div class="sleeve"></div>
-                        <div class="disk" style="background-image: url('${file.download_url}')"></div>
-                    </div>
-                `;
-                slide.onclick = () => pickDisk(slide.querySelector('.disk'));
-                shelf.appendChild(slide);
-            });
-
-            // Запуск карусели
-            new Swiper(".mySwiper", {
-                effect: "coverflow",
-                centeredSlides: true,
-                slidesPerView: "auto",
-                coverflowEffect: { rotate: 30, stretch: 0, depth: 100, modifier: 1, slideShadows: true },
-            });
+        function handleSelect(caseEl) {
+            if (currentState !== 'SELECT') return;
+            
+            selectedDisk = caseEl.querySelector('.disk');
+            gsap.to(selectedDisk, { y: -180, duration: 0.5, ease: "back.out" });
+            
+            currentState = 'INSERT';
+            updateBtn("📥", "Вставить диск");
+            actionBtn.disabled = false;
         }
 
-        function pickDisk(el) {
-            if (selectedDisk) return;
-            selectedDisk = el;
-            gsap.to(el, { y: -160, zIndex: 10, duration: 0.5, ease: "power2.out" });
-            document.getElementById('playBtn').classList.add('active');
+        actionBtn.onclick = () => {
+            if (currentState === 'INSERT') {
+                const target = document.getElementById('target').getBoundingClientRect();
+                const current = selectedDisk.getBoundingClientRect();
+
+                gsap.to(selectedDisk, {
+                    x: target.left - current.left + 30,
+                    y: target.top - current.top + 30,
+                    width: 240, height: 240,
+                    duration: 1,
+                    ease: "power2.inOut",
+                    onComplete: () => {
+                        currentState = 'PLAY';
+                        updateBtn("▶️", "Запустить");
+                    }
+                });
+            } 
+            else if (currentState === 'PLAY') {
+                speedUI.style.display = 'block';
+                spinAnim = gsap.to(selectedDisk, { 
+                    rotation: 360, duration: 1.5, repeat: -1, ease: "none" 
+                });
+                
+                // Анимация цифр RPM
+                gsap.to({val: 0}, {
+                    val: 33, duration: 2, 
+                    onUpdate: function() { rpmText.innerText = Math.floor(this.targets()[0].val); }
+                });
+
+                currentState = 'STOP';
+                updateBtn("⏹️", "Остановить");
+            } 
+            else if (currentState === 'STOP') {
+                gsap.to(spinAnim, { 
+                    timeScale: 0, duration: 4, ease: "power2.out",
+                    onUpdate: () => {
+                        rpmText.innerText = Math.floor(spinAnim.timeScale() * 33);
+                    },
+                    onComplete: () => {
+                        spinAnim.pause();
+                        actionBtn.disabled = true;
+                        updateBtn("✅", "Готово");
+                    }
+                });
+            }
+        };
+
+        function updateBtn(icon, text) {
+            btnIcon.innerText = icon;
+            btnText.innerText = text;
         }
 
-        document.getElementById('playBtn').onclick = function() {
-            this.classList.remove('active');
-            gsap.to(selectedDisk, { 
-                y: 250, scale: 1.1, duration: 0.8, ease: "back.inOut(1)",
-                onComplete: () => {
-                    spinAnim = gsap.to(selectedDisk, { rotation: 360, duration: 2, repeat: -1, ease: "none" });
-                    document.getElementById('stopBtn').classList.add('active');
-                }
-            });
-        };
-
-        document.getElementById('stopBtn').onclick = function() {
-            this.classList.remove('active');
-            gsap.to(spinAnim, { 
-                timeScale: 0, duration: 4, ease: "power2.out",
-                onComplete: () => { spinAnim.pause(); }
-            });
-        };
-
-        loadImages();
+        init();
     </script>
 </body>
 </html>
